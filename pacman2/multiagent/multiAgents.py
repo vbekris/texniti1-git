@@ -79,13 +79,13 @@ class ReflexAgent(Agent):
                 return -float('inf')
         
         foodList = newFood.asList()  #grid-->lista gia thn thesh toy faghtoy
-        
+        min_dis = float('inf')  
          
         for food in foodList:
             distance = manhattanDistance(newPos, food)
             if distance == 0:
                 return 0  #an o pacman faghthei to faghto
-            min_dis = float('inf')
+            
             if distance < min_dis:
                 min_dis = distance   
             
