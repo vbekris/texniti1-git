@@ -149,8 +149,34 @@ class MinimaxAgent(MultiAgentSearchAgent):
         gameState.isLose():
         Returns whether or not the game state is a losing state
         """
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        agentIndex = self.index
+
+        
+        #nested function gia minimax anadromiko algorithmo
+        def minmax(agentIndex, depth, gameState):
+            next_agent = (agentIndex + 1) % gameState.getNumAgents() 
+        
+            next_depth = gameState.getDepth() + 1 if next_agent == 0 else gameState.getDepth()
+        
+            moves = gameState.getLegalActions(agentIndex)
+            
+            if depth == self.depth or gameState.isWin() or gameState.isLose():
+                return self.evaluationFunction(gameState)
+            
+            if agentIndex == 0:  # seira pacman/MAX
+                max_val = -float('inf')
+                for action in moves:
+                    successor = gameState.generateSuccessor(agentIndex, action)
+                    eval = minmax((agentIndex + 1) % gameState.getNumAgents(), next_depth, successor)
+                    max_val = max(max_val, eval)
+                return max_val
+            else:  # seira fantasmatos/MIN
+                min_val = float('inf')
+                for action in moves:
+                    successor = gameState.generateSuccessor(agentIndex  , action)
+                    eval = minmax((agentIndex + 1) % gameState.getNumAgents(), next_depth, successor)
+                    min_val = min(min_val, eval)
+                return min_val
 
 class AlphaBetaAgent(MultiAgentSearchAgent):
     """
