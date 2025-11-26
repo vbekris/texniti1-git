@@ -156,7 +156,7 @@ class MinimaxAgent(MultiAgentSearchAgent):
         def minmax(agentIndex, depth, gameState):
             next_agent = (agentIndex + 1) % gameState.getNumAgents() 
         
-            next_depth = gameState.getDepth() + 1 if next_agent == 0 else gameState.getDepth()
+            next_depth = depth + 1 if next_agent == 0 else depth
         
             moves = gameState.getLegalActions(agentIndex)
             
@@ -167,16 +167,26 @@ class MinimaxAgent(MultiAgentSearchAgent):
                 max_val = -float('inf')
                 for action in moves:
                     successor = gameState.generateSuccessor(agentIndex, action)
-                    eval = minmax((agentIndex + 1) % gameState.getNumAgents(), next_depth, successor)
-                    max_val = max(max_val, eval)
+                    max_val = max(max_val, minmax(next_agent, next_depth, successor))
                 return max_val
             else:  # seira fantasmatos/MIN
                 min_val = float('inf')
                 for action in moves:
                     successor = gameState.generateSuccessor(agentIndex  , action)
-                    eval = minmax((agentIndex + 1) % gameState.getNumAgents(), next_depth, successor)
-                    min_val = min(min_val, eval)
+                    min_val = min(min_val, minmax(next_agent, next_depth, successor))
                 return min_val
+        # ilopoihsh epilogis kinisis me vasi to minimax
+        
+        best_score = -float('inf')
+        best_action = None
+        
+        for action in gameState.getLegalActions(0):
+            successor = gameState.generateSuccessor(0, action)
+            eval = minmax(1, 0, successor)
+            if eval > best_score:
+                best_score = eval
+                best_action = action
+        return best_action
 
 class AlphaBetaAgent(MultiAgentSearchAgent):
     """
@@ -187,8 +197,62 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
         """
         Returns the minimax action using self.depth and self.evaluationFunction
         """
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        agentIndex = self.index
+
+        
+        #nested function gia minimax anadromiko algorithmo
+        def alphabeta(agentIndex, depth, gameState, alpha, beta):
+            next_agent = (agentIndex + 1) % gameState.getNumAgents() 
+        
+            next_depth = depth + 1 if next_agent == 0 else depth
+        
+            moves = gameState.getLegalActions(agentIndex)
+            
+            if depth == self.depth or gameState.isWin() or gameState.isLose():
+                return self.evaluationFunction(gameState)
+            
+            if agentIndex == 0:  # seira pacman/MAX
+                max_val = -float('inf')
+                for action in moves:
+                    successor = gameState.generateSuccessor(agentIndex, action)
+                    val  = alphabeta(next_agent, next_depth, successor, alpha, beta)
+                    max_val = max(max_val, val)
+                    alpha = max(alpha, max_val)
+                    if max_val > beta:
+                        return max_val
+                    
+                    alpha = max(alpha, max_val)#ananewsh alpha
+                    
+                return max_val
+            else:  # seira fantasmatos/MIN
+                min_val = float('inf')
+                for action in moves:
+                    successor = gameState.generateSuccessor(agentIndex  , action)
+                    val = alphabeta(next_agent, next_depth, successor, alpha, beta)
+                    min_val = min(min_val, val)
+                    beta = min(beta, min_val)
+                    if min_val < alpha:
+                        return min_val
+                    
+                    beta = min(beta, min_val) #ananewsh beta
+                    
+                return min_val
+        #ilopoihsh epilogis kinisis me vasi to alphabeta
+        alpha = -float('inf')   
+        beta = float('inf')
+        best_score = -float('inf')
+        best_action = None
+        
+        for action in gameState.getLegalActions(0):
+            successor = gameState.generateSuccessor(0, action)
+            eval = alphabeta(1, 0, successor, alpha, beta)
+            if eval > best_score:
+                best_score = eval
+                best_action = action
+            if best_score > beta:
+                return best_action
+            alpha = max(alpha, best_score) #ananewsh alpha gia thn epomenh kinisi
+        return best_action
 
 class ExpectimaxAgent(MultiAgentSearchAgent):
     """
@@ -202,8 +266,42 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
         All ghosts should be modeled as choosing uniformly at random from their
         legal moves.
         """
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        def expectimax(agentIndex, depth, gameState):
+            next_agent = (agentIndex + 1) % gameState.getNumAgents() 
+        
+            next_depth = depth + 1 if next_agent == 0 else depth
+        
+            moves = gameState.getLegalActions(agentIndex)
+            
+            if depth == self.depth or gameState.isWin() or gameState.isLose():
+                return self.evaluationFunction(gameState)
+            
+            if agentIndex == 0:  # seira pacman/MAX
+                max_val = -float('inf')
+                for action in moves:
+                    successor = gameState.generateSuccessor(agentIndex, action)
+                    max_val = max(max_val, expectimax(next_agent, next_depth, successor))
+                return max_val
+            else:  # seira fantasmatos/EXPECTATION
+                total_val = 0
+                for action in moves:
+                    possibilities = 1 / len(moves)
+                    successor = gameState.generateSuccessor(agentIndex  , action)
+                    total_val += expectimax(next_agent, next_depth, successor)
+                expected_val = total_val * possibilities
+                return expected_val
+        # ilopoihsh epilogis kinisis me vasi to expectimax
+        best_score = -float('inf')
+        best_action = None
+        
+        for action in gameState.getLegalActions(0):
+            successor = gameState.generateSuccessor(0, action)
+            eval = expectimax(1, 0, successor)
+            if eval > best_score:
+                best_score = eval
+                best_action = action
+        return best_action
+    
 
 def betterEvaluationFunction(currentGameState: GameState):
     """
@@ -212,8 +310,37 @@ def betterEvaluationFunction(currentGameState: GameState):
 
     DESCRIPTION: <write something here so we know what you did>
     """
-    "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    new_pos = currentGameState.getPacmanPosition()
+    new_food = currentGameState.getFood()
+    new_ghost_states = currentGameState.getGhostStates()
+    new_scared_times = [ghost_state.scaredTimer for ghost_state in new_ghost_states]
+    new_capsules = currentGameState.getCapsules()
+    
+    score = currentGameState.getScore()
+    
+    new_food_list = new_food.asList()
+    
+    # evaluation mesw tou faghtoy
+    min_food_distance = float('inf')
+    for food in new_food_list:
+        distance = manhattanDistance(new_pos, food)
+        score += 10 / (distance + 1)  #prosferei vathmologia me vasi thn apostash apo kathe faghto(antistrofos analoga score kai apostash)
+    
+    # evaluation mesw twn fantasmatwn
+    for ghost_state in new_ghost_states:
+        ghost_pos = ghost_state.getPosition()
+        distance = manhattanDistance(new_pos, ghost_pos)
+        if ghost_state.scaredTimer > 0:
+            score += 200 / (distance + 1)  #an to fantasma einai scared, go for it
+        else:
+            if distance <= 1:
+                return -float('inf')  #apofugh fantasmatos
+            score -= 20 / (distance + 1)  #apofugh me vasi thn apostash
+    # evaluation mesw twn capsules
+    for capsule in new_capsules:
+        distance = manhattanDistance(new_pos, capsule)
+        score += 20 / (distance + 1)  #prosferei vathmologia me vasi thn apostash apo kathe capsule(antistrofos analoga score kai apostash)
+    return score
 
 # Abbreviation
 better = betterEvaluationFunction
