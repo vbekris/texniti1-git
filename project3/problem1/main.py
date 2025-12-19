@@ -73,7 +73,7 @@ def run_experiment(specific_instance=None):
             p4 = RLFA_CSP(inst_id, 'data')
             p4.instance_id = inst_id
             # Χωρίς restarts, απλή κλήση με όριο βημάτων
-            run_algorithm('MIN-CONFLICTS', min_conflicts, p4, max_steps=100000)
+            run_algorithm('MIN-CONFLICTS', min_conflicts, p4, max_steps=10000)
             
             print("-" * 65)
 
