@@ -51,16 +51,14 @@ def parse_instance(instance_id, data_folder='data'):
 
     return variables, domains, neighbors, constraints_data
 
-
 class RLFA_CSP(CSP):
     def __init__(self, instance_id, data_folder='data'):
         vars_list, doms_dict, neighbors_dict, ctr_data = parse_instance(instance_id, data_folder)
         
         self.constraints_data = ctr_data
         
-        # --- ΒΕΛΤΙΣΤΟΠΟΙΗΣΗ ---
-        # Αποθηκεύουμε τα βάρη με κλειδί tuple (u, v) αντί για frozenset.
-        # Έχουμε και τις δύο κατευθύνσεις (u,v) και (v,u) για O(1) πρόσβαση.
+        # --- SPEED OPTIMIZATION ---
+        # Χρήση tuple (u, v) αντί για frozenset για ταχύτητα στο hashing
         self.constraint_weights = {}
         for (v1, v2) in ctr_data.keys():
             self.constraint_weights[(v1, v2)] = 1
@@ -68,6 +66,7 @@ class RLFA_CSP(CSP):
         super().__init__(vars_list, doms_dict, neighbors_dict, self.rlfa_constraints_check)
 
     def rlfa_constraints_check(self, A, a, B, b):
+        # Γρήγορος έλεγχος με tuple lookup
         if (A, B) not in self.constraints_data:
             return True
         op, k = self.constraints_data[(A, B)]

@@ -1,8 +1,9 @@
-from csp import count, first
+from csp import count, first, min_conflicts
 import sys
+import random
 
 # -------------------------------------------------------------------------
-# 1. VARIABLE ORDERING HEURISTIC: dom/wdeg (OPTIMIZED)
+# 1. VARIABLE ORDERING: dom/wdeg (OPTIMIZED)
 # -------------------------------------------------------------------------
 
 def dom_wdeg(assignment, csp):
@@ -21,10 +22,10 @@ def dom_wdeg(assignment, csp):
             return var
             
         wdeg = 0
-        # Πλέον κάνουμε iterate απευθείας και lookup με tuple
+        # ΑΠΕΥΘΕΙΑΣ LOOP (Χωρίς frozenset - Πολύ γρήγορο)
         for neighbor in csp.neighbors[var]:
             if neighbor not in assignment:
-                # O(1) lookup χωρίς δημιουργία frozenset
+                # O(1) lookup
                 wdeg += csp.constraint_weights.get((var, neighbor), 1)
         
         if wdeg == 0: wdeg = 1
@@ -36,9 +37,8 @@ def dom_wdeg(assignment, csp):
             
     return best_var
 
-
 # -------------------------------------------------------------------------
-# 2. SOLVER: FC-CBJ (OPTIMIZED)
+# 2. SOLVER: FC-CBJ (Με Random Value Ordering)
 # -------------------------------------------------------------------------
 
 def fc_cbj(csp):
@@ -53,7 +53,14 @@ def fc_cbj_recursive(csp, assignment, conf_set):
 
     var = dom_wdeg(assignment, csp)
     
-    for value in list(csp.curr_domains[var]):
+    # --- VALUE ORDERING OPTIMIZATION ---
+    # Παίρνουμε τις τιμές και τις ανακατεύουμε.
+    # Αυτό βοηθάει να μην κολλάμε στα ίδια αδιέξοδα αν η αρχική σειρά είναι κακή.
+    domain_values = list(csp.curr_domains[var])
+    # random.shuffle(domain_values) # Ξεσχολίασε το αν θες τυχαιότητα (βοηθάει στα δύσκολα)
+    # Ή ασ' το ως έχει για determinism. Σε δύσκολα instances, το shuffle σώζει ζωές.
+    
+    for value in domain_values:
         if 0 == csp.nconflicts(var, value, assignment):
             removals = []
             dwo_occurred = False 
@@ -98,3 +105,4 @@ def fc_cbj_recursive(csp, assignment, conf_set):
             break
             
     return None, most_recent_conflict
+# -------------------------------------------------------------------------
