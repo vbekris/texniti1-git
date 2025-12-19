@@ -147,16 +147,17 @@ class SetPartitionSolver:
 # Στην αρχή του αρχείου σου, σιγουρέψου ότι έχεις: import sys
 
 if __name__ == "__main__":
+    import sys
+    
     # Ελέγχουμε αν ο χρήστης έδωσε όνομα αρχείου
     if len(sys.argv) < 2:
-        print("Usage: python solver.py <filename>")
-        print("Example: python solver.py 17x197.txt")
+        print("Usage: python3 pairing_solver.py <filename>")
         sys.exit(1)
 
-    # Παίρνουμε το όνομα του αρχείου από τα ορίσματα (arguments)
     filename = sys.argv[1] 
     
-    print(f"--- Solving {filename} ---")
+    # Προαιρετικό: Τυπώνουμε μήνυμα μόνο αν τρέχουμε ένα αρχείο (όχι στο batch mode του Make)
+    # print(f"--- Solving {filename} ---")
     
     try:
         # 1. Διάβασμα
@@ -166,9 +167,9 @@ if __name__ == "__main__":
         solver = SetPartitionSolver(N, data)
         cost, sol = solver.solve()
         
-        # 3. Αποτέλεσμα
-        print(f"RESULT | File: {filename} | Cost: {cost} | Elements: {len(sol)}")
-        # print(f"Details: {sorted(sol)}") # Ξεσχολίασέ το αν θες να βλέπεις και τη λίστα
+        # 3. Αποτέλεσμα (ΤΡΟΠΟΠΟΙΗΣΗ ΓΙΑ ΝΑ ΤΥΠΩΝΕΙ ΤΗ ΛΙΣΤΑ)
+        # Τυπώνουμε σε μία γραμμή: Αρχείο, Κόστος, Πλήθος, και μετά τη Λίστα των IDs
+        print(f"RESULT | File: {filename} | Cost: {cost} | Count: {len(sol)} | Selected Pairings: {sorted(sol)}")
         
     except FileNotFoundError:
         print(f"Error: File '{filename}' not found.")
