@@ -6,7 +6,7 @@ def parse_instance(instance_id, data_folder='data'):
     Διαβάζει τα αρχεία var, dom, ctr και επιστρέφει τις δομές που χρειάζεται ο CSP.
     
     Returns:
-        variables (list): Η λίστα με τα ονόματα (IDs) των μεταβλητών.
+        variables (list): H λίστα με τα ονόματα (IDs) των μεταβλητών.
         domains (dict): Λεξικό {var_id: [τιμές]}.
         neighbors (dict): Λεξικό {var_id: {neighbor_1, neighbor_2...}}.
         constraints_data (dict): Λεξικό {(var1, var2): (operator, k)}.
