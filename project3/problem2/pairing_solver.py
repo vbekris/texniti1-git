@@ -7,28 +7,24 @@ def parse_dataset(filename):
         if not first_line: return 0, []
         
         num_flights = int(first_line[0])
-        # Το δεύτερο νούμερο είναι το πλήθος pairings (M), δεν το χρειαζόμαστε άμεσα
+        # Το δεύτερο νούμερο είναι το πλήθος pairings (M)
         
-        # Μετρητής για να δίνουμε εμείς ID (1, 2, 3...)
+        # Μετρητής για να δίνει ID (1, 2, 3...)
         current_id = 1
         
         for line in f:
             parts = line.strip().split()
             if not parts: continue
             
-            # --- ΔΙΟΡΘΩΣΗ ΕΔΩ ---
             # 1η στήλη: Κόστος
             cost = int(parts[0])
-            
-            # 2η στήλη: Πλήθος πτήσεων (μας είναι άχρηστο αφού θα τις διαβάσουμε όλες, αλλά υπάρχει)
-            # count = int(parts[1]) 
             
             # Από την 3η στήλη και μετά: Οι Πτήσεις
             flights = set(int(x) for x in parts[2:])
             
             pairings.append({
                 'id': current_id,   # Δικό μας ID
-                'cost': cost,       # Το σωστό κόστος
+                'cost': cost,       # Το κόστος
                 'flights': flights
             })
             
@@ -69,13 +65,12 @@ class SetPartitionSolver:
         """
         Ξεκινάει τη διαδικασία επίλυσης.
         """
-        # 1. Ποιες πτήσεις πρέπει να καλύψουμε; Στην αρχή, ΟΛΕΣ (1 έως N).
         # Χρησιμοποιούμε set για να αφαιρούμε εύκολα όσες καλύπτουμε.
         all_flights = set(range(1, self.num_flights + 1))
         
         print(f"Start solving for {self.num_flights} flights...")
         
-        # 2. Καλούμε την αναδρομική μέθοδο (θα τη γράψουμε στο επόμενο βήμα).
+        # 2. Καλούμε την αναδρομική μέθοδο.
         # Ορίσματα: 
         #   - uncovered_flights: Πτήσεις που μένουν να καλυφθούν
         #   - current_cost: Πόσο έχουμε ξοδέψει μέχρι τώρα (0 αρχικά)
@@ -94,7 +89,7 @@ class SetPartitionSolver:
         """
         
         # --- 1. BASE CASE (ΕΠΙΤΥΧΙΑ) ---
-        # Αν το σύνολο uncovered_flights είναι άδειο, σημαίνει καλύψαμε τα πάντα!
+        # Αν το σύνολο uncovered_flights είναι άδειο, σημαίνει καλύψαμε τα πάντα
         if not uncovered_flights:
             # Βρήκαμε μια λύση. Είναι καλύτερη από την προηγούμενη;
             if current_cost < self.best_cost:
@@ -104,16 +99,14 @@ class SetPartitionSolver:
                 print(f"Βρέθηκε νέα καλύτερη λύση! Κόστος: {self.best_cost}")
             return # Τέλος αυτού του μονοπατιού.
 
-        # --- 2. PRUNING (ΚΛΑΔΕΜΑ) ---
+        # --- 2. PRUNING ---
         # Branch & Bound: Αν ήδη έχουμε ξεπεράσει το κόστος της καλύτερης λύσης
-        # που βρήκαμε νωρίτερα, δεν υπάρχει λόγος να συνεχίσουμε. Σταματάμε.
+        # που βρήκαμε νωρίτερα, σταματάμε.
         if current_cost >= self.best_cost:
             return
 
-        # --- 3. HEURISTIC MRV (Η Στρατηγική) ---
-        # Ποια πτήση να προσπαθήσουμε να καλύψουμε τώρα;
-        # ΟΧΙ την πρώτη τυχαία. Διαλέγουμε την "πιο δύσκολη".
-        # Δηλαδή, αυτή που έχει τις ΛΙΓΟΤΕΡΕΣ επιλογές (pairings) στο ευρετήριο.
+        # --- 3. HEURISTIC MRV ---
+        # ΟΧΙ την πρώτη τυχαία. Διαλέγουμε αυτή που έχει τις ΛΙΓΟΤΕΡΕΣ επιλογές (pairings) στο ευρετήριο.
         
         # Η εντολή min ψάχνει μέσα στο uncovered_flights.
         # Το key=lambda f: ... λέει "σύγκρινε τες με βάση το μήκος της λίστας τους στο ευρετήριο".
@@ -137,27 +130,21 @@ class SetPartitionSolver:
                 # Αφαιρούμε τις πτήσεις του pairing από τις ακάλυπτες
                 remaining_flights = uncovered_flights - p['flights']
                 
-                # Καλούμε το ρομπότ ξανά (Αναδρομή) για το επόμενο βήμα
+                # Καλούμε αναδρομή για το επόμενο βήμα
                 self._search(
                     remaining_flights, 
                     current_cost + p['cost'], 
                     current_solution + [p['id']]
                 )
                 
-# Στην αρχή του αρχείου σου, σιγουρέψου ότι έχεις: import sys
-
 if __name__ == "__main__":
     import sys
     
-    # Ελέγχουμε αν ο χρήστης έδωσε όνομα αρχείου
     if len(sys.argv) < 2:
         print("Usage: python3 pairing_solver.py <filename>")
         sys.exit(1)
 
     filename = sys.argv[1] 
-    
-    # Προαιρετικό: Τυπώνουμε μήνυμα μόνο αν τρέχουμε ένα αρχείο (όχι στο batch mode του Make)
-    # print(f"--- Solving {filename} ---")
     
     try:
         # 1. Διάβασμα
