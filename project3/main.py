@@ -1,12 +1,49 @@
 import time
-from csp import backtracking_search, forward_checking, mac, mrv
+import sys
+import signal
+from csp import backtracking_search, forward_checking, mac, min_conflicts
 from rlfap_csp import RLFA_CSP
 from solvers import dom_wdeg, fc_cbj
 
-def run_experiment():
-    # Λίστα με τα IDs των instances που έχουμε στα data (βάσει των αρχείων που ανέβασες)
-    # Μπορείς να σχολιάσεις κάποια αν θες να τρέξεις πιο γρήγορα τεστ
-    instances = [
+# Ορισμός Timeout Exception
+class TimeoutException(Exception): pass
+
+def timeout_handler(signum, frame):
+    raise TimeoutException
+
+# Χρονικό όριο (1 λεπτό ανά αλγόριθμο)
+TIMEOUT_SECONDS = 60
+
+def run_algorithm(name, func, *args, **kwargs):
+    """ Helper για τρέξιμο με timeout """
+    problem = args[0] # Το πρώτο όρισμα είναι πάντα το πρόβλημα
+    start_time = time.time()
+    
+    # Ενεργοποίηση Alarm
+    signal.signal(signal.SIGALRM, timeout_handler)
+    signal.alarm(TIMEOUT_SECONDS)
+    
+    try:
+        # Κλήση της συνάρτησης
+        result = func(*args, **kwargs)
+        elapsed = time.time() - start_time
+        signal.alarm(0) # Απενεργοποίηση Alarm
+        
+        status = "SOLVED" if result else "FAIL"
+        
+        # Για τον Min-Conflicts το nassigns είναι τα βήματα που έκανε
+        n_assigns = problem.nassigns
+        
+        print(f"{problem.instance_id:<15} | {name:<13} | {elapsed:<10.4f} | {n_assigns:<10} | {status:<10}")
+        
+    except TimeoutException:
+        print(f"{problem.instance_id:<15} | {name:<13} | {'> ' + str(TIMEOUT_SECONDS) + 's':<10} | {'-':<10} | {'TIMEOUT':<10}")
+    except Exception as e:
+        signal.alarm(0)
+        print(f"{problem.instance_id:<15} | {name:<13} | {'ERROR':<10} | {'-':<10} | {str(e):<10}")
+
+def run_experiment(specific_instance=None):
+    all_instances = [
         '2-f24', '2-f25', 
         '3-f10', '3-f11', 
         '6-w2', 
@@ -16,67 +53,40 @@ def run_experiment():
         '14-f27', '14-f28'
     ]
 
-    print(f"{'Instance':<15} | {'Algorithm':<10} | {'Time (s)':<10} | {'Assigns':<10} | {'Result':<10}")
+    instances = [specific_instance] if specific_instance else all_instances
+
+    print(f"{'Instance':<15} | {'Algorithm':<13} | {'Time (s)':<10} | {'Assigns':<10} | {'Result':<10}")
     print("-" * 65)
 
     for inst_id in instances:
         try:
-            # 1. Φόρτωση του Προβλήματος
-            # Φτιάχνουμε ένα φρέσκο αντικείμενο για κάθε αλγόριθμο για να μην κρατάει "σκουπίδια"
-            # (π.χ. βάρη από προηγούμενες εκτελέσεις)
-            
-            # --- ΑΛΓΟΡΙΘΜΟΣ 1: FC (Forward Checking) με dom/wdeg ---
-            problem = RLFA_CSP(inst_id, 'data')
-            start_time = time.time()
-            
-            # Χρησιμοποιούμε την έτοιμη backtracking_search του AIMA
-            # select_unassigned_variable: Η ευρετική μας (dom/wdeg)
-            # inference: Ο μηχανισμός Forward Checking
-            result = backtracking_search(
-                problem, 
-                select_unassigned_variable=dom_wdeg, 
-                inference=forward_checking
-            )
-            elapsed = time.time() - start_time
-            n_assigns = problem.nassigns # Μετρητής αναθέσεων του AIMA
-            status = "SOLVED" if result else "FAIL"
-            
-            print(f"{inst_id:<15} | {'FC':<10} | {elapsed:<10.4f} | {n_assigns:<10} | {status:<10}")
+            # --- 1. FC (Forward Checking) ---
+            p1 = RLFA_CSP(inst_id, 'data')
+            p1.instance_id = inst_id 
+            run_algorithm('FC', backtracking_search, p1, select_unassigned_variable=dom_wdeg, inference=forward_checking)
 
-            # --- ΑΛΓΟΡΙΘΜΟΣ 2: MAC (Maintaining Arc Consistency) με dom/wdeg ---
-            problem = RLFA_CSP(inst_id, 'data') # Ξανά φόρτωση για καθαρή αρχή
-            start_time = time.time()
-            
-            # Ίδια συνάρτηση, αλλά αλλάζουμε το inference σε MAC
-            result = backtracking_search(
-                problem, 
-                select_unassigned_variable=dom_wdeg, 
-                inference=mac
-            )
-            elapsed = time.time() - start_time
-            n_assigns = problem.nassigns
-            status = "SOLVED" if result else "FAIL"
-            
-            print(f"{inst_id:<15} | {'MAC':<10} | {elapsed:<10.4f} | {n_assigns:<10} | {status:<10}")
+            # --- 2. MAC (Maintaining Arc Consistency) ---
+            p2 = RLFA_CSP(inst_id, 'data')
+            p2.instance_id = inst_id
+            run_algorithm('MAC', backtracking_search, p2, select_unassigned_variable=dom_wdeg, inference=mac)
 
-            # --- ΑΛΓΟΡΙΘΜΟΣ 3: FC-CBJ (Custom Solver) με dom/wdeg ---
-            problem = RLFA_CSP(inst_id, 'data') # Ξανά φόρτωση
-            start_time = time.time()
+            # --- 3. FC-CBJ (Custom Solver) ---
+            p3 = RLFA_CSP(inst_id, 'data')
+            p3.instance_id = inst_id
+            run_algorithm('FC-CBJ', fc_cbj, p3)
+
+            # --- 4. MIN-CONFLICTS (Local Search) ---
+            # Ερώτημα 4: Τοπική Αναζήτηση
+            p4 = RLFA_CSP(inst_id, 'data')
+            p4.instance_id = inst_id
+            # max_steps: Πόσες προσπάθειες να κάνει πριν τα παρατήσει (10000 είναι καλό νούμερο)
+            run_algorithm('MIN-CONFLICTS', min_conflicts, p4, max_steps=10000)
             
-            # Εδώ καλούμε τον δικό μας solver από το solvers.py
-            result = fc_cbj(problem)
-            
-            elapsed = time.time() - start_time
-            n_assigns = problem.nassigns
-            status = "SOLVED" if result else "FAIL"
-            
-            print(f"{inst_id:<15} | {'FC-CBJ':<10} | {elapsed:<10.4f} | {n_assigns:<10} | {status:<10}")
             print("-" * 65)
 
         except FileNotFoundError:
-            print(f"Skipping {inst_id}: Files not found in 'data' folder.")
-        except Exception as e:
-            print(f"Error on {inst_id}: {e}")
+            print(f"Skipping {inst_id}: Files not found.")
 
 if __name__ == "__main__":
-    run_experiment()
+    target = sys.argv[1] if len(sys.argv) > 1 else None
+    run_experiment(target)
