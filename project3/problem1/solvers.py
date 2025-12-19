@@ -2,10 +2,7 @@ from csp import count, first, min_conflicts
 import sys
 import random
 
-# -------------------------------------------------------------------------
-# 1. VARIABLE ORDERING: dom/wdeg (OPTIMIZED)
-# -------------------------------------------------------------------------
-
+# dom_wdeg και fc_cbj υλοποιήσεις
 def dom_wdeg(assignment, csp):
     unassigned = [v for v in csp.variables if v not in assignment]
     
@@ -37,9 +34,7 @@ def dom_wdeg(assignment, csp):
             
     return best_var
 
-# -------------------------------------------------------------------------
-# 2. SOLVER: FC-CBJ (Με Random Value Ordering)
-# -------------------------------------------------------------------------
+# FC-CBJ (Με Random Value Ordering)
 
 def fc_cbj(csp):
     conf_set = {v: set() for v in csp.variables}
@@ -57,8 +52,6 @@ def fc_cbj_recursive(csp, assignment, conf_set):
     # Παίρνουμε τις τιμές και τις ανακατεύουμε.
     # Αυτό βοηθάει να μην κολλάμε στα ίδια αδιέξοδα αν η αρχική σειρά είναι κακή.
     domain_values = list(csp.curr_domains[var])
-    # random.shuffle(domain_values) # Ξεσχολίασε το αν θες τυχαιότητα (βοηθάει στα δύσκολα)
-    # Ή ασ' το ως έχει για determinism. Σε δύσκολα instances, το shuffle σώζει ζωές.
     
     for value in domain_values:
         if 0 == csp.nconflicts(var, value, assignment):
@@ -79,7 +72,7 @@ def fc_cbj_recursive(csp, assignment, conf_set):
                         dwo_occurred = True
                         failed_neighbor = neighbor
                         
-                        # UPDATE WEIGHTS (Bidirectional)
+                        # UPDATE WEIGHTS 
                         csp.constraint_weights[(var, neighbor)] += 1
                         csp.constraint_weights[(neighbor, var)] += 1
                         break 
@@ -105,4 +98,3 @@ def fc_cbj_recursive(csp, assignment, conf_set):
             break
             
     return None, most_recent_conflict
-# -------------------------------------------------------------------------

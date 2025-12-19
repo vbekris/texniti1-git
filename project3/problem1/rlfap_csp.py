@@ -57,7 +57,6 @@ class RLFA_CSP(CSP):
         
         self.constraints_data = ctr_data
         
-        # --- SPEED OPTIMIZATION ---
         # Χρήση tuple (u, v) αντί για frozenset για ταχύτητα στο hashing
         self.constraint_weights = {}
         for (v1, v2) in ctr_data.keys():

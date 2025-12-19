@@ -1,8 +1,6 @@
-# Ορισμός του Python interpreter (python ή python3 ανάλογα το σύστημά σου)
 PYTHON = python3
 SCRIPT = main.py
 
-# .PHONY σημαίνει ότι αυτοί οι στόχοι δεν είναι αρχεία
 .PHONY: all help run-all clean
 
 # Default target: Τρέχει όταν γράφεις σκέτο 'make'
@@ -18,10 +16,7 @@ help:
 run-all:
 	$(PYTHON) $(SCRIPT)
 
-# Pattern Rule: Αυτό είναι το "μαγικό" κομμάτι.
-# Το '%' πιάνει οτιδήποτε γράψεις μετά το 'run-'.
-# Το '$*' αντικαθιστά αυτό που έγραψες στη θέση του '%'.
-# Άρα αν γράψεις 'make run-2-f24', θα τρέξει: python3 main.py 2-f24
+# Τρέχει για συγκεκριμένο instance
 run-%:
 	$(PYTHON) $(SCRIPT) $*
 

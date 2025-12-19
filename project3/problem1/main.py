@@ -10,7 +10,7 @@ class TimeoutException(Exception): pass
 def timeout_handler(signum, frame):
     raise TimeoutException
 
-# 60 δευτερόλεπτα Timeout
+# 60 δευτερόλεπτα Timeout!!
 TIMEOUT_SECONDS = 60
 
 def run_algorithm(name, func, *args, **kwargs):
